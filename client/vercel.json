@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://alfi-ufi-wedding.vercel.app/api/:path*"
+    }
+  ]
+}

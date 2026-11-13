@@ -31,7 +31,7 @@ The OAuth refresh token is stored locally in the ignored file `server/.google-dr
 Vercel can host both the frontend and the Express API as separate projects from this same GitHub repository. The frontend is a static Vite site; the backend runs as request-based Vercel Functions. The laptop does not need to stay on. Functions are not a continuously running background process, but they run when guests make requests.
 
 1. Import this repository into Vercel and create the frontend project with Root Directory `client`.
-2. In the frontend project's Settings > Environment Variables, add `VITE_API_URL` with the backend project's production URL (for example `https://alfi-ufi-wedding-api.vercel.app`). Redeploy the frontend after setting it.
+2. The frontend's `vercel.json` proxies `/api/*` requests to the deployed API project, so both projects use the same public origin and the browser does not need cross-origin access.
 3. Import the same GitHub repository again as a second Vercel project for the API, with Root Directory `server`. Vercel detects the exported Express app.
 4. In the API project's Settings > Environment Variables, add `CLIENT_ORIGIN` (the exact production frontend URL), `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_OAUTH_REFRESH_TOKEN`. Do not add these secrets to GitHub.
 5. To copy the already-authorized refresh token locally without displaying it in chat, run this in PowerShell from the repository root and paste the result directly into Vercel's `GOOGLE_OAUTH_REFRESH_TOKEN` value: `(Get-Content server\.google-drive-oauth-token.json -Raw | ConvertFrom-Json).refresh_token`.
