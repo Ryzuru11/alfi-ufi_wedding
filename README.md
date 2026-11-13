@@ -27,17 +27,19 @@ For a personal Gmail account, connect Drive using OAuth (a service account canno
 
 The OAuth refresh token is stored locally in the ignored file `server/.google-drive-oauth-token.json`. The backend uploads guest photos to the configured folder and serves gallery images through the API, so files do not need public Drive sharing. The gallery is visible to anyone who can reach the website.
 
-## Free deployment: Vercel + Render
-1. Deploy the `client` folder from this repository to Vercel (set the project Root Directory to `client`).
-2. Deploy the API to Render using the repository's `render.yaml` Blueprint. Render will prompt for environment variables. Set `CLIENT_ORIGIN` to the final Vercel URL, set the Drive folder ID and OAuth client ID/secret, and set `GOOGLE_OAUTH_REDIRECT_URI` to `https://YOUR-RENDER-SERVICE.onrender.com/api/drive/callback`.
-3. In Google Auth Platform > Clients, add that Render callback URL to the same OAuth web client as an authorized redirect URI.
-4. On your computer, copy the existing OAuth refresh token with `((Get-Content server\.google-drive-oauth-token.json -Raw | ConvertFrom-Json).refresh_token)` and paste it directly into Render's `GOOGLE_OAUTH_REFRESH_TOKEN` environment variable. Do not send it in chat or commit it. The API can use this environment variable without relying on Render's temporary filesystem.
-5. In Vercel Project Settings > Environment Variables, set `VITE_API_URL` to `https://YOUR-RENDER-SERVICE.onrender.com`, then redeploy the frontend.
-6. Test the Render `/api/health` and `/api/drive/health` endpoints, then upload a photo from the Vercel site and check its gallery.
+## Free deployment: Vercel only
+Vercel can host both the frontend and the Express API as separate projects from this same GitHub repository. The frontend is a static Vite site; the backend runs as request-based Vercel Functions. The laptop does not need to stay on. Functions are not a continuously running background process, but they run when guests make requests.
 
-The free Render service may sleep when idle and take a short time to wake; this is expected on the free plan. During Google OAuth app Testing, refresh tokens can expire after seven days, so reauthorize and update the Render environment variable if that happens. Public guest access requires using the deployed HTTPS site, not localhost.
+1. Import this repository into Vercel and create the frontend project with Root Directory `client`.
+2. In the frontend project's Settings > Environment Variables, add `VITE_API_URL` with the backend project's production URL (for example `https://alfi-ufi-wedding-api.vercel.app`). Redeploy the frontend after setting it.
+3. Import the same GitHub repository again as a second Vercel project for the API, with Root Directory `server`. Vercel detects the exported Express app.
+4. In the API project's Settings > Environment Variables, add `CLIENT_ORIGIN` (the exact production frontend URL), `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_OAUTH_REFRESH_TOKEN`. Do not add these secrets to GitHub.
+5. To copy the already-authorized refresh token locally without displaying it in chat, run this in PowerShell from the repository root and paste the result directly into Vercel's `GOOGLE_OAUTH_REFRESH_TOKEN` value: `(Get-Content server\.google-drive-oauth-token.json -Raw | ConvertFrom-Json).refresh_token`.
+6. Deploy both projects. Check the API project's `/api/health` and `/api/drive/health`, then try taking and uploading a photo from the production frontend.
 
-Each browser currently has a five-photo limit stored in localStorage. It is a UI convenience, not server-enforced quota; guests can reset it. The API accepts JPG, PNG, and WEBP photos up to 8 MB.
+Google Drive OAuth authorization is performed locally at `http://localhost:3000/api/drive/auth`; the production API does not expose an authorization callback because Vercel Functions do not provide persistent local token storage. If the Google Testing refresh token expires, reauthorize locally and update the Vercel environment variable. Vercel Functions are request-driven rather than a 24/7 process, and the laptop can be turned off. Guests must use the production HTTPS frontend, not localhost.
+
+Each browser currently has a five-photo limit stored in localStorage. It is a UI convenience, not server-enforced quota; guests can reset it. Photos are compressed by the camera page before upload; the API accepts JPG, PNG, and WEBP images up to 4 MB.
 
 ## Run
 ```bash

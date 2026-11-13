@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import { Readable } from 'node:stream'
 
 const tokenFile = fileURLToPath(new URL('../../.google-drive-oauth-token.json', import.meta.url))
-const authorizationStates = new Map()
 
 function getOAuthClient() {
   const { GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET } = process.env
@@ -58,19 +57,19 @@ async function getDriveClient() {
 export function createDriveAuthorizationUrl() {
   const oauth2Client = getOAuthClient()
   const state = randomBytes(32).toString('hex')
-  authorizationStates.set(state, Date.now() + 10 * 60 * 1000)
-  return oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    prompt: 'consent',
-    scope: ['https://www.googleapis.com/auth/drive'],
+  return {
     state,
-  })
+    url: oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: ['https://www.googleapis.com/auth/drive'],
+      state,
+    }),
+  }
 }
 
-export async function completeDriveAuthorization(code, state) {
-  const expiresAt = authorizationStates.get(state)
-  authorizationStates.delete(state)
-  if (!expiresAt || expiresAt < Date.now()) {
+export async function completeDriveAuthorization(code, state, expectedState) {
+  if (!expectedState || state !== expectedState) {
     throw new Error('Google authorization expired or is invalid. Restart at /api/drive/auth.')
   }
 

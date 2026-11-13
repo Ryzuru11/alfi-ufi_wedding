@@ -74,8 +74,9 @@ export default function CameraPage() {
     }
 
     const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    const scale = Math.min(1, 1920 / video.videoWidth, 1440 / video.videoHeight)
+    canvas.width = Math.round(video.videoWidth * scale)
+    canvas.height = Math.round(video.videoHeight * scale)
     canvas.getContext('2d').drawImage(video, 0, 0)
     canvas.toBlob((blob) => {
       if (!blob) {
@@ -85,7 +86,7 @@ export default function CameraPage() {
       setPreview({ blob, url: URL.createObjectURL(blob) })
       setError('')
       stopCamera()
-    }, 'image/jpeg', 0.9)
+    }, 'image/jpeg', 0.8)
   }
 
   async function uploadPhoto() {

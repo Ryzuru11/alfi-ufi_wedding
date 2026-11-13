@@ -21,5 +21,10 @@ app.use((err, _req, res, _next) => {
     : 500)
   res.status(status).json({ message: err.message || 'Internal server error' })
 })
-const port = Number(process.env.PORT || 3000)
-app.listen(port, () => console.log(`Wedding API running at http://localhost:${port}`))
+
+if (!process.env.VERCEL) {
+  const port = Number(process.env.PORT || 3000)
+  app.listen(port, () => console.log(`Wedding API running at http://localhost:${port}`))
+}
+
+export default app
