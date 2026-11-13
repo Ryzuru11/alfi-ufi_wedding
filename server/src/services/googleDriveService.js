@@ -25,20 +25,26 @@ function getOAuthClient() {
 async function getDriveClient() {
   const oauth2Client = getOAuthClient()
   let credentials
-  try {
-    credentials = JSON.parse(await readFile(tokenFile, 'utf8'))
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error
-    throw new Error('Google Drive belum terhubung. Buka /api/drive/auth untuk memberi izin.')
+  if (process.env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+    credentials = { refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN }
+  } else {
+    try {
+      credentials = JSON.parse(await readFile(tokenFile, 'utf8'))
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error
+      throw new Error('Google Drive belum terhubung. Buka /api/drive/auth untuk memberi izin.')
+    }
   }
   oauth2Client.setCredentials(credentials)
-  oauth2Client.on('tokens', (tokens) => {
-    const updatedCredentials = { ...credentials, ...tokens }
-    writeFile(tokenFile, JSON.stringify(updatedCredentials), { mode: 0o600 })
-      .catch((error) => console.error('Failed to save refreshed Google OAuth tokens:', error))
-  })
+  if (!process.env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+    oauth2Client.on('tokens', (tokens) => {
+      const updatedCredentials = { ...credentials, ...tokens }
+      writeFile(tokenFile, JSON.stringify(updatedCredentials), { mode: 0o600 })
+        .catch((error) => console.error('Failed to save refreshed Google OAuth tokens:', error))
+    })
+  }
 
-  const { GOOGLE_DRIVE_FOLDER_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY } = process.env
+  const { GOOGLE_DRIVE_FOLDER_ID } = process.env
   if (!GOOGLE_DRIVE_FOLDER_ID) {
     throw new Error('Missing Google Drive configuration: GOOGLE_DRIVE_FOLDER_ID')
   }
@@ -112,11 +118,6 @@ export async function savePhotoToDrive(file) {
     })
     data = response.data
   } catch (error) {
-    if (/storage quota|service accounts do not have storage|storage limit/i.test(error.message || '')) {
-      const actionableError = new Error('Service Account tidak memiliki kuota penyimpanan. Gunakan folder di Google Workspace Shared Drive dan tambahkan Service Account sebagai Contributor.')
-      actionableError.status = 503
-      throw actionableError
-    }
     throw error
   }
 
