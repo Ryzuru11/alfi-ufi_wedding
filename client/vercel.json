@@ -3,6 +3,18 @@
     {
       "source": "/api/:path*",
       "destination": "https://alfi-ufi-wedding.vercel.app/api/:path*"
+    },
+    {
+      "source": "/camera",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/gallery",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/thank-you",
+      "destination": "/index.html"
     }
   ]
 }
